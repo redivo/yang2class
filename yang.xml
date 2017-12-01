@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module name="example-module"
+        xmlns="urn:ietf:params:xml:ns:yang:yin:1"
+        xmlns:storm-control="urn:dmos:dmos-storm-control">
+  <yang-version value="1.1"/>
+  <namespace uri="urn:dmos:dmos-storm-control"/>
+  <prefix value="storm-control"/>
+  <import module="tailf-common">
+    <prefix value="tailf"/>
+  </import>
+  <import module="dmos-base">
+    <prefix value="base"/>
+  </import>
+  <import module="switchport-native-vlan">
+    <prefix value="switchport"/>
+  </import>
+  <import module="dmos-types">
+    <prefix value="types"/>
+  </import>
+  <import module="dmos-storm-control-defines">
+    <prefix value="sc-defines"/>
+  </import>
+  <description>
+    <text>This YANG module defines a component that describes the configuration of Interface Storm
+Control.</text>
+  </description>
+  <revision date="2016-08-25">
+    <description>
+      <text>Base model for Interface Storm Control.</text>
+    </description>
+  </revision>
+  <container name="my-container-a">
+    <leaf name="olar">
+      <type name="int32"/>
+    </leaf>
+    <container name="my-container-a-a">
+      <leaf name="my-intra-leaf">
+        <type name="string"/>
+      </leaf>
+    </container>
+  </container>
+  <leaf name="blz">
+    <type name="string"/>
+  </leaf>
+</module>
