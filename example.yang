@@ -1,28 +1,7 @@
-module example-module {
+module example {
     yang-version 1.1;
     namespace "urn:dmos:dmos-storm-control";
     prefix storm-control;
-
-    import tailf-common {
-        prefix "tailf";
-    }
-
-    import dmos-base {
-        prefix "base";
-    }
-
-    import switchport-native-vlan {
-        prefix "switchport";
-    }
-
-    import dmos-types {
-        prefix "types";
-    }
-
-    import dmos-storm-control-defines {
-        prefix "sc-defines";
-    }
-
 
     description
         "This YANG module defines a component that describes the configuration of Interface Storm
@@ -45,11 +24,24 @@ module example-module {
         }
     }
 
-    //augment "/base:config" {
-    //    container my-container-b {
-            leaf blz {
-                type string;
-            }
+    leaf blz {
+        type string;
+    }
+
+    //augment "/my-container-a" {
+    //    leaf blz {
+    //        type string;
     //    }
     //}
+
+    list my-list {
+        key id;
+        leaf id {
+            type int32;
+        }
+
+        leaf content {
+            type int32;
+        }
+    }
 }
