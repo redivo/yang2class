@@ -37,7 +37,8 @@ def yangName2VarName(yangName):
 class Node(object):
 
     def __init__(self, xmlElem, path):
-        self.name = xmlElem.attrib['name']
+        if 'name' in xmlElem.attrib:
+           self.name = xmlElem.attrib['name']
         self.path = path
         self.children = []
 
@@ -70,7 +71,6 @@ class Leaf(Node):
                 break
 
         self.valueType = valueType
-        self.nodeType = NODE_TYPE_MODULE
 
     def getRecursiveCppHeader(self):
         return ''
@@ -97,7 +97,6 @@ class Leaf(Node):
 class Container(Node):
     def __init__(self, xmlElem, path):
         super(Container, self).__init__(xmlElem, path)
-        self.nodeType = NODE_TYPE_CONTAINER
 
     def getRecursiveCppHeader(self):
         header = ''
@@ -167,7 +166,6 @@ class List(Container):
                 break
 
         self.keyName = keyName
-        self.nodeType = NODE_TYPE_CONTAINER
 
     def addChildNode(self, child):
         # If it's the key of the list, save it as the key, not as a normal child
@@ -186,6 +184,20 @@ class List(Container):
 
     def getCppInstantiate(self):
         return '    std::map<CppYangModel::Leaf<' + YangTypeConversion[self.key.getType()] + '>, ' + yangName2ClassName(self.name) + '>' + ' ' + yangName2VarName(self.name) + ';\n'
+
+####################################################################################################
+
+class Augment(Container):
+    def __init__(self, xmlElem, path):
+        super(Augment, self).__init__(xmlElem, xmlElem.attrib['target-node'] + '/')
+        self.name = xmlElem.attrib['target-node'][1:].title().replace(":", "_").replace("-", "_").replace("/", "__")
+
+    def showRecursive(self, prePrintLine = ''):
+        print prePrintLine + 'Augment ' + self.path
+        print prePrintLine + '|   Path: ' + self.path
+        for child in self.children:
+            child.showRecursive(prePrintLine + '|   ')
+        print prePrintLine + '\''
 
 ####################################################################################################
 
@@ -236,8 +248,6 @@ class Module(Node):
 
         return header
 
-
-
 ####################################################################################################
 
 DataNodeTypes = {
@@ -245,6 +255,7 @@ DataNodeTypes = {
     NODE_TYPE_LEAF : Leaf,
     NODE_TYPE_CONTAINER : Container,
     NODE_TYPE_LIST : List,
+    NODE_TYPE_AUGMENT : Augment,
 }
 
 ####################################################################################################
@@ -256,7 +267,9 @@ def createNode(xmlElem, path):
     if not (tag in DataNodeTypes):
         return None
 
-    currentPath = path + xmlElem.attrib['name'] + '/'
+    currentPath = ''
+    if 'name' in xmlElem.attrib:
+        currentPath = path + xmlElem.attrib['name'] + '/'
     node = DataNodeTypes[tag](xmlElem, currentPath)
 
     return node

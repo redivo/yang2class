@@ -1,10 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module name="example"
         xmlns="urn:ietf:params:xml:ns:yang:yin:1"
-        xmlns:storm-control="urn:dmos:dmos-storm-control">
+        xmlns:example="urn:example"
+        xmlns:base="urn:base">
   <yang-version value="1.1"/>
-  <namespace uri="urn:dmos:dmos-storm-control"/>
-  <prefix value="storm-control"/>
+  <namespace uri="urn:example"/>
+  <prefix value="example"/>
+  <import module="base">
+    <prefix value="base"/>
+  </import>
   <description>
     <text>This YANG module defines a component that describes the configuration of Interface Storm
 Control.</text>
@@ -14,6 +18,11 @@ Control.</text>
       <text>Base model for Interface Storm Control.</text>
     </description>
   </revision>
+  <augment target-node="/base:x-base/base:y_middle/base:z">
+    <leaf name="augmented">
+      <type name="int16"/>
+    </leaf>
+  </augment>
   <container name="my-container-b">
     <leaf name="olar">
       <type name="int8"/>
