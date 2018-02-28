@@ -12,9 +12,6 @@ module example {
             "Base model for Interface Storm Control.";
     }
 
-    container my-container-a {
-    }
-
     container my-container-b {
         leaf olar {
             type int8;
@@ -34,12 +31,6 @@ module example {
         type string;
     }
 
-    ////augment "/my-container-a" {
-    ////    leaf blz {
-    ////        type string;
-    ////    }
-    ////}
-
     list my-list {
         key id;
         leaf id {
@@ -50,16 +41,16 @@ module example {
             type int32;
         }
 
-    //    list things {
-    //        key name;
-    //        leaf name {
-    //            type string;
-    //        }
+        list things {
+            key name;
+            leaf name {
+                type string;
+            }
 
-    //        leaf x {
-    //            type string;
-    //        }
-    //    }
+            leaf x {
+                type string;
+            }
+        }
 
         container inside-list-container {
             leaf content {

@@ -32,39 +32,33 @@ def yangName2ClassName(yangName):
 def yangName2VarName(yangName):
     return yangName.lower().replace('-', '_') + '_'
 
-class Module:
-    def __init__(self, xmlElem, path='/'):
-        self.name = xmlElem.attrib['name']
-        self.nodeType = NODE_TYPE_MODULE
-        self.children = []
+####################################################################################################
 
-    def addChildNode(self, child):
-        self.children.append(child)
+class Node(object):
+
+    def __init__(self, xmlElem, path):
+        self.name = xmlElem.attrib['name']
+        self.path = path
+        self.children = []
 
     def getName(self):
         return self.name
 
-    def showRecursive(self, prePrintLine = ''):
-        print prePrintLine + 'Module ' + self.name
-        for child in self.children:
-            child.showRecursive(prePrintLine + '|   ')
-        print prePrintLine + '\''
+    def addChildNode(self, child):
+        self.children.append(child)
 
-    def getRecursiveCppHeader(self):
-        header = ''
+    def getPath(self):
+        return self.path
 
-        for child in self.children:
-            header += child.getRecursiveCppChildHeader()
+    def addChildNode(self, child):
+        self.children.append(child)
 
-        header += 'class ' + yangName2ClassName(self.name) + ' {\n'
-        header += '   private:\n'
-        for child in self.children:
-            header += child.getCppInstantiate('    ')
-        header += '};'
-        return header
+####################################################################################################
 
-class Leaf:
+class Leaf(Node):
     def __init__(self, xmlElem, path):
+        super(Leaf, self).__init__(xmlElem, path)
+
         # Get type of leaf
         valueType = ''
         for prop in xmlElem:
@@ -75,26 +69,21 @@ class Leaf:
                 valueType = prop.attrib['name']
                 break
 
-        self.name = xmlElem.attrib['name']
-        self.path = path
         self.valueType = valueType
         self.nodeType = NODE_TYPE_MODULE
 
-    def getRecursiveCppChildHeader(self):
+    def getRecursiveCppHeader(self):
         return ''
 
-    def getCppInstantiate(self, preIdent = ''):
-        return preIdent + 'Leaf<' + YangTypeConversion[self.valueType] + '>' \
-                        + ' ' + yangName2VarName(self.name) + ';\n'
+    def getCppInstantiate(self):
+        return  '    CppYangModel::Leaf<' + YangTypeConversion[self.valueType] + '>' \
+                + ' ' + yangName2VarName(self.name) + ';\n'
+
+    def getCppInitializer(self):
+        return yangName2VarName(self.name) + '("' + self.path + '")'
 
     def getType(self):
         return self.valueType
-
-    def getName(self):
-        return self.name
-
-    def getPath(self):
-        return self.path
 
     def showRecursive(self, prePrintLine = ''):
         print prePrintLine + 'Leaf ' + self.name
@@ -102,41 +91,58 @@ class Leaf:
         print prePrintLine + '|   Path: ' + self.path
         print prePrintLine + '\''
 
-class Container:
-    def __init__(self, xmlElem, path):
-        self.name = xmlElem.attrib['name']
-        self.nodeType = NODE_TYPE_CONTAINER
-        self.path = path
-        self.children = []
+####################################################################################################
 
-    def getRecursiveCppChildHeader(self):
+
+class Container(Node):
+    def __init__(self, xmlElem, path):
+        super(Container, self).__init__(xmlElem, path)
+        self.nodeType = NODE_TYPE_CONTAINER
+
+    def getRecursiveCppHeader(self):
         header = ''
+        initializerList = ''
+        instantiationList = ''
 
         for child in self.children:
-            header += child.getRecursiveCppChildHeader()
+            header += child.getRecursiveCppHeader()
+            initializer = child.getCppInitializer()
+            if initializer != '':
+                initializerList += ',\n        ' + child.getCppInitializer()
 
-        header += 'class ' + yangName2ClassName(self.name) + ' : BasicNode {\n'
+            instantiationList += child.getCppInstantiate()
+
+
+        header += 'class ' + yangName2ClassName(self.name) + ' : public CppYangModel::BasicNode {\n'
+
+        # If initializer list is not empty, print it
         header += '   public:\n'
-        header += '    ' + yangName2ClassName(self.name) + ' : BasicNode("' + self.path + '") {}\n'
-        header += '\n'
-        header += '   private:\n'
-        #for child in self.children:
-        #    header += child.getCppInstantiate('    ')
+        header += '    ' + yangName2ClassName(self.name) + '()\n'
+        header += '        : CppYangModel::BasicNode("' + self.path + '")'
+
+        if initializerList != '':
+            header +=  initializerList + '\n'
+        else:
+            header += '\n'
+
+        header += '    {\n'
+        header += '    }\n'
+
+
+        if instantiationList != '':
+            header += '\n'
+            header += '   private:\n'
+            header +=      instantiationList
+
         header += '};\n\n'
 
         return header
 
-    def getCppInstantiate(self, preIdent = ''):
-        return preIdent + yangName2ClassName(self.name) + ' ' + yangName2VarName(self.name) + ';\n'
+    def getCppInstantiate(self):
+        return '    ' + yangName2ClassName(self.name) + ' ' + yangName2VarName(self.name) + ';\n'
 
-    def getPath(self):
-        return self.path
-
-    def addChildNode(self, child):
-        self.children.append(child)
-
-    def getName(self):
-        return self.name
+    def getCppInitializer(self):
+        return ""
 
     def showRecursive(self, prePrintLine = ''):
         print prePrintLine + 'Container ' + self.name
@@ -145,8 +151,11 @@ class Container:
             child.showRecursive(prePrintLine + '|   ')
         print prePrintLine + '\''
 
-class List:
+####################################################################################################
+
+class List(Container):
     def __init__(self, xmlElem, path):
+        super(List, self).__init__(xmlElem, path)
         # Get key
         keyName = ''
         for prop in xmlElem:
@@ -158,37 +167,7 @@ class List:
                 break
 
         self.keyName = keyName
-        self.name = xmlElem.attrib['name']
         self.nodeType = NODE_TYPE_CONTAINER
-        self.path = path
-        self.children = []
-
-
-    def getRecursiveCppChildHeader(self):
-        header = ''
-
-        for child in self.children:
-            header += child.getRecursiveCppChildHeader()
-
-        header += 'class ' + yangName2ClassName(self.name) + ' : BasicNode {\n'
-        header += '   public:\n'
-        header += '    ' + yangName2ClassName(self.name) + ' : BasicNode("' + self.path + '") {}\n'
-        header += '\n'
-        header += '   private:\n'
-        for child in self.children:
-            header += child.getCppInstantiate('    ')
-        header += '};\n\n'
-
-        return header
-
-    def getCppInstantiate(self, preIdent = ''):
-        return preIdent + 'std::map<Leaf<' + self.key.getType() + '>, ' + yangName2ClassName(self.name) + '>' + ' ' + yangName2VarName(self.name) + ';\n'
-
-    def getPath(self):
-        return self.path
-
-    def getName(self):
-        return self.name
 
     def addChildNode(self, child):
         # If it's the key of the list, save it as the key, not as a normal child
@@ -204,6 +183,60 @@ class List:
         for child in self.children:
             child.showRecursive(prePrintLine + '|   ')
         print prePrintLine + '\''
+
+    def getCppInstantiate(self):
+        return '    std::map<CppYangModel::Leaf<' + YangTypeConversion[self.key.getType()] + '>, ' + yangName2ClassName(self.name) + '>' + ' ' + yangName2VarName(self.name) + ';\n'
+
+####################################################################################################
+
+class Module(Node):
+    def __init__(self, xmlElem, path='/'):
+        super(Module, self).__init__(xmlElem, path)
+        self.nodeType = NODE_TYPE_MODULE
+
+    def showRecursive(self, prePrintLine = ''):
+        print prePrintLine + 'Module ' + self.name
+        for child in self.children:
+            child.showRecursive(prePrintLine + '|   ')
+        print prePrintLine + '\''
+
+    def getRecursiveCppHeader(self):
+        header = ''
+        initializerList = ''
+        instantiationList = ''
+
+        for child in self.children:
+            header += child.getRecursiveCppHeader()
+
+            initializer = child.getCppInitializer()
+            if initializerList != '' and initializer != '':
+                initializerList += ',\n        '
+
+            initializerList += initializer
+
+            instantiationList += child.getCppInstantiate()
+
+        header += 'class ' + yangName2ClassName(self.name) + ' {\n'
+
+        # If initializer list is not empty, print it
+        if initializerList != '':
+            header += '   public:\n'
+            header += '    ' + yangName2ClassName(self.name) + '()\n'
+            header += '        : ' + initializerList + '\n'
+            header += '    {\n'
+            header += '    }\n'
+            header += '\n'
+
+        # If instantiation list is not empty, print it
+        if instantiationList != '':
+            header += '   private:\n'
+            header += instantiationList
+
+        header += '};'
+
+        return header
+
+
 
 ####################################################################################################
 

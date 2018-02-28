@@ -14,7 +14,6 @@ Control.</text>
       <text>Base model for Interface Storm Control.</text>
     </description>
   </revision>
-  <container name="my-container-a"/>
   <container name="my-container-b">
     <leaf name="olar">
       <type name="int8"/>
@@ -39,6 +38,15 @@ Control.</text>
     <leaf name="content">
       <type name="int32"/>
     </leaf>
+    <list name="things">
+      <key value="name"/>
+      <leaf name="name">
+        <type name="string"/>
+      </leaf>
+      <leaf name="x">
+        <type name="string"/>
+      </leaf>
+    </list>
     <container name="inside-list-container">
       <leaf name="content">
         <type name="int32"/>
