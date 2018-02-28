@@ -14,8 +14,12 @@ Control.</text>
       <text>Base model for Interface Storm Control.</text>
     </description>
   </revision>
-  <container name="my-container-a">
+  <container name="my-container-a"/>
+  <container name="my-container-b">
     <leaf name="olar">
+      <type name="int8"/>
+    </leaf>
+    <leaf name="tudo_bem">
       <type name="int32"/>
     </leaf>
     <container name="my-container-a-a">
@@ -35,5 +39,10 @@ Control.</text>
     <leaf name="content">
       <type name="int32"/>
     </leaf>
+    <container name="inside-list-container">
+      <leaf name="content">
+        <type name="int32"/>
+      </leaf>
+    </container>
   </list>
 </module>
