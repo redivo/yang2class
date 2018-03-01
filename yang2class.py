@@ -52,6 +52,7 @@ class Node(object):
         self.children = []
         self.valueType = ''
         self.key = ''
+        self.description = ''
 
     ################################################################################################
     ## Retrieve the node name
@@ -66,6 +67,13 @@ class Node(object):
     # return  Node path
     def getPath(self):
         return self.path
+
+    ################################################################################################
+    ## Set description to node
+    # @param  self  The current object
+    # @param  desc  Description to be set
+    def setDescription(self, desc):
+        self.description = desc
 
     ################################################################################################
     ## Add a child to the current node
@@ -128,8 +136,15 @@ class Leaf(Node):
     ################################################################################################
     ## Retrieve a string containing the recursive C++ header
     # @param  self  The current object
-    # return  An empty string, since a leaf uses the generic Leaf object in C++
+    # return  An empty string
     def getRecursiveCppHeader(self):
+        return ''
+
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ implementation
+    # @param  self  The current object
+    # return  An empty string
+    def getRecursiveCppImplementation(self):
         return ''
 
     ################################################################################################
@@ -175,42 +190,62 @@ class Container(Node):
     # return  String containing the recursive C++ header
     def getRecursiveCppHeader(self):
         header = ''
-        initializerList = ''
         instantiationList = ''
 
         for child in self.children:
             header += child.getRecursiveCppHeader()
-            initializer = child.getCppInitializer()
-            if initializer != '':
-                initializerList += ',\n        ' + child.getCppInitializer()
-
             instantiationList += child.getCppInstantiate()
 
-
+        header += '/******************************************************************************'\
+               + '********************/\n'
+        header += '/**\n'
+        header += ' * \\brief ' + self.description + '\n'
+        header += ' */\n'
         header += 'class ' + yangName2ClassName(self.name) + ' : public CppYangModel::BasicNode {\n'
-
-        # If initializer list is not empty, print it
         header += '   public:\n'
-        header += '    ' + yangName2ClassName(self.name) + '()\n'
-        header += '        : CppYangModel::BasicNode("' + self.path + '")'
-
-        if initializerList != '':
-            header +=  initializerList + '\n'
-        else:
-            header += '\n'
-
-        header += '    {\n'
-        header += '    }\n'
-
+        header += '    /**\n'
+        header += '     * \\brief Constructor\n'
+        header += '     */\n'
+        header += '    ' + yangName2ClassName(self.name) + '();\n'
+        header += '\n'
 
         if instantiationList != '':
-            header += '\n'
             header += '   private:\n'
             header +=      instantiationList
 
         header += '};\n\n'
 
         return header
+
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ implementation, including its children
+    # @param  self  The current object
+    # return  String containing the recursive C++ implementation
+    def getRecursiveCppImplementation(self):
+        impl = ''
+        initializerList = ''
+
+        for child in self.children:
+            impl += child.getRecursiveCppImplementation()
+            initializer = child.getCppInitializer()
+            if initializer != '':
+                initializerList += ',\n    ' + child.getCppInitializer()
+
+        impl += '/******************************************************************************'\
+               + '********************/\n'
+        impl += yangName2ClassName(self.name) + '::' + yangName2ClassName(self.name) + '()\n'
+        impl += '    : CppYangModel::BasicNode("' + self.path + '")'
+
+        ## If initializer list is not empty, print it
+        if initializerList != '':
+            impl +=  initializerList + '\n'
+
+        impl += '{\n'
+        impl += '}\n'
+        impl += '\n'
+
+        return impl
+
 
     ################################################################################################
     ## Retrieve a string containing a representation of the container. Used for debug purposes
@@ -317,30 +352,24 @@ class Module(Node):
     # return  String containing the recursive C++ header
     def getRecursiveCppHeader(self):
         header = ''
-        initializerList = ''
         instantiationList = ''
 
         for child in self.children:
             header += child.getRecursiveCppHeader()
-
-            initializer = child.getCppInitializer()
-            if initializerList != '' and initializer != '':
-                initializerList += ',\n        '
-
-            initializerList += initializer
-
             instantiationList += child.getCppInstantiate()
 
+        header += '/******************************************************************************'\
+               + '********************/\n'
+        header += '/**\n'
+        header += ' * \\brief ' + self.description + '\n'
+        header += ' */\n'
         header += 'class ' + yangName2ClassName(self.name) + ' {\n'
-
-        # If initializer list is not empty, print it
-        if initializerList != '':
-            header += '   public:\n'
-            header += '    ' + yangName2ClassName(self.name) + '()\n'
-            header += '        : ' + initializerList + '\n'
-            header += '    {\n'
-            header += '    }\n'
-            header += '\n'
+        header += '   public:\n'
+        header += '    /**\n'
+        header += '     * \\brief Constructor\n'
+        header += '     */\n'
+        header += '    ' + yangName2ClassName(self.name) + '();\n'
+        header += '\n'
 
         # If instantiation list is not empty, print it
         if instantiationList != '':
@@ -350,6 +379,36 @@ class Module(Node):
         header += '};'
 
         return header
+
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ implementation, including its children
+    # @param  self  The current object
+    # return  String containing the recursive C++ implementation
+    def getRecursiveCppImplementation(self):
+        impl = ''
+        initializerList = ''
+
+        for child in self.children:
+            impl += child.getRecursiveCppImplementation()
+
+            initializer = child.getCppInitializer()
+            if initializerList != '' and initializer != '':
+                initializerList += ',\n        '
+
+            initializerList += initializer
+
+        impl += '/******************************************************************************'\
+               + '********************/\n'
+        impl += yangName2ClassName(self.name) + '::' + yangName2ClassName(self.name) + '()\n'
+
+        # If initializer list is not empty, print it
+        if initializerList != '':
+            impl += '    : ' + initializerList + '\n'
+
+        impl += '{\n'
+        impl += '}\n'
+
+        return impl
 
     ################################################################################################
     ## Retrieve a string containing a representation of the module. Used for debug purposes
@@ -371,6 +430,22 @@ DataNodeTypes = {
     NODE_TYPE_CONTAINER : Container,
     NODE_TYPE_LIST : List,
     NODE_TYPE_AUGMENT : Augment,
+}
+
+####################################################################################################
+## Handle a description
+# @param  xmlElem  XML node of description
+# @param  parent   Parent node
+# return  The parent with changes
+def handleDescription(xmlElem, parent):
+    parent.setDescription(xmlElem[0].text);
+    return parent
+
+####################################################################################################
+
+# Dictionary that maps properties to handler
+PropertiesToHandler = {
+    'description' : handleDescription,
 }
 
 ####################################################################################################
@@ -399,11 +474,19 @@ def createNode(xmlElem, path):
 # @param  path        Base path
 def iterateOverNode(parentNode, xmlElem, path = '/'):
     for child in xmlElem:
+
         node = createNode(child, path)
-        if node == None:
+        if node != None:
+            parentNode.addChildNode(node)
+        else:
+            tag = child.tag.split('}')
+            tag = tag[len(tag) - 1]
+
+            if tag in PropertiesToHandler:
+                parentNode = PropertiesToHandler[tag](child, parentNode)
+
             continue
 
-        parentNode.addChildNode(node)
         iterateOverNode(node, child, node.getPath())
 
 ####################################################################################################
@@ -419,7 +502,7 @@ parser.add_argument('-p', '--path', type=str, metavar='PATH1:PATH2', action='app
 parser.add_argument('input', type=str, help='YANG file to be converted.')
 args = parser.parse_args()
 
-# Mount pybot commmand
+# Mount pybot command
 cmd = ["pyang", args.input, "-f", "yin", "-o", args.input + ".xml"]
 if args.path:
     for path in args.path:
@@ -436,13 +519,47 @@ root = tree.getroot()
 # Parse it
 rootNode = createNode(root, '')
 iterateOverNode(rootNode, root)
-headerContent = rootNode.getRecursiveCppHeader()
 
-# Output the header
+
+header = '/**************************************************************************************'\
+       + '************/\n'
+header += '/**\n'
+header += ' * \\file\n'
+header += ' * \\brief ' + rootNode.getName() + ' YANG module representation.\n'
+header += ' *\n'
+header += ' * WARNING WARNING --> This is an auto generated file <-- WARNING WARNING\n'
+header += ' *\n'
+header += ' */\n'
+header += '/**************************************************************************************'\
+       + '************/\n\n'
+
+# Generate header file
+headerContent = header
+headerContent += '#ifndef __AUTOGEN_' + rootNode.getName().upper() + '_H__\n'
+headerContent += '#define __AUTOGEN_' + rootNode.getName().upper() + '_H__\n'
+headerContent += '\n'
+headerContent += '#include "yang2cpp.h"\n'
+headerContent += '\n'
+headerContent += rootNode.getRecursiveCppHeader()
+headerContent += '\n'
+headerContent += '#endif /* __AUTOGEN_' + rootNode.getName().upper() + '_H__ */\n'
 outputFile = rootNode.getName()
 if args.output:
     outputFile = args.output
 outputFile += '.h'
 f = open(outputFile, 'w')
 f.write(headerContent)
+f.close
+
+# Generate implementation
+implementationContent = header
+implementationContent += '#include "' + outputFile + '"\n'
+implementationContent += '\n'
+implementationContent += rootNode.getRecursiveCppImplementation()
+outputFile = rootNode.getName()
+if args.output:
+    outputFile = args.output
+outputFile += '.cc'
+f = open(outputFile, 'w')
+f.write(implementationContent)
 f.close

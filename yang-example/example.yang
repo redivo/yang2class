@@ -7,19 +7,24 @@ module example {
         prefix base;
     }
 
+    description "Example module.";
+
     augment "/base:x/base:y/base:z" {
+        description "Example augment.";
         leaf augmented {
             type int16;
         }
     }
 
     container my-container {
+        description "Example container.";
         leaf my-leaf {
             type int8;
         }
     }
 
     list my-list {
+        description "Example list.";
         key id;
         leaf id {
             type int32;
