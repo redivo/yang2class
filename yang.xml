@@ -9,57 +9,23 @@
   <import module="base">
     <prefix value="base"/>
   </import>
-  <description>
-    <text>This YANG module defines a component that describes the configuration of Interface Storm
-Control.</text>
-  </description>
-  <revision date="2016-08-25">
-    <description>
-      <text>Base model for Interface Storm Control.</text>
-    </description>
-  </revision>
-  <augment target-node="/base:x-base/base:y_middle/base:z">
+  <augment target-node="/base:x/base:y/base:z">
     <leaf name="augmented">
       <type name="int16"/>
     </leaf>
   </augment>
-  <container name="my-container-b">
-    <leaf name="olar">
+  <container name="my-container">
+    <leaf name="my-leaf">
       <type name="int8"/>
     </leaf>
-    <leaf name="tudo_bem">
-      <type name="int32"/>
-    </leaf>
-    <container name="my-container-a-a">
-      <leaf name="my-intra-leaf">
-        <type name="string"/>
-      </leaf>
-    </container>
   </container>
-  <leaf name="blz">
-    <type name="string"/>
-  </leaf>
   <list name="my-list">
     <key value="id"/>
     <leaf name="id">
       <type name="int32"/>
     </leaf>
     <leaf name="content">
-      <type name="int32"/>
+      <type name="string"/>
     </leaf>
-    <list name="things">
-      <key value="name"/>
-      <leaf name="name">
-        <type name="string"/>
-      </leaf>
-      <leaf name="x">
-        <type name="string"/>
-      </leaf>
-    </list>
-    <container name="inside-list-container">
-      <leaf name="content">
-        <type name="int32"/>
-      </leaf>
-    </container>
   </list>
 </module>

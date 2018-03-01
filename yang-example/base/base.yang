@@ -3,8 +3,8 @@ module base {
     namespace "urn:base";
     prefix base;
 
-    container x-base {
-        container y_middle {
+    container x {
+        container y {
             container z {
             }
         }

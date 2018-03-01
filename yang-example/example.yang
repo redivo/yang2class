@@ -1,0 +1,33 @@
+module example {
+    yang-version 1.1;
+    namespace "urn:example";
+    prefix example;
+
+    import base {
+        prefix base;
+    }
+
+    augment "/base:x/base:y/base:z" {
+        leaf augmented {
+            type int16;
+        }
+    }
+
+    container my-container {
+        leaf my-leaf {
+            type int8;
+        }
+    }
+
+    list my-list {
+        key id;
+        leaf id {
+            type int32;
+        }
+
+        leaf content {
+            type string;
+        }
+
+    }
+}

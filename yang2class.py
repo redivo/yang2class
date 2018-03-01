@@ -1,11 +1,10 @@
 #!/usr/bin/python
 import xml.etree.ElementTree as ET
-from pprint import pprint
+import argparse
+import subprocess
+import sys
 
-tree = ET.parse('yang.xml')
-root = tree.getroot()
-
-# Node types
+# Node types strings
 NODE_TYPE_MODULE    = 'module'
 NODE_TYPE_LEAF      = 'leaf'
 NODE_TYPE_CONTAINER = 'container'
@@ -14,6 +13,7 @@ NODE_TYPE_LIST      = 'list'
 NODE_TYPE_LEAFLIST  = 'leaf-list'
 NODE_TYPE_USES      = 'uses'
 
+# Conversion from YANG types to C++ types
 YangTypeConversion = {
     'int8'   : 'int8_t',
     'uint8'  : 'uint8_t',
@@ -25,38 +25,91 @@ YangTypeConversion = {
 }
 
 ####################################################################################################
-
+## Convert a YANG node name in a C++ Class name
+# @param  yangName  YANG node name
 def yangName2ClassName(yangName):
     return yangName.title().replace('-', '').replace('_', '')
 
+####################################################################################################
+## Convert a YANG node name in a C++ variable/attribute name
+# @param  yangName  YANG node name
 def yangName2VarName(yangName):
     return yangName.lower().replace('-', '_') + '_'
 
 ####################################################################################################
-
+## Generic node representation
 class Node(object):
 
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the node to be created
+    # @param  path     The path of the node
     def __init__(self, xmlElem, path):
         if 'name' in xmlElem.attrib:
            self.name = xmlElem.attrib['name']
         self.path = path
         self.children = []
+        self.valueType = ''
+        self.key = ''
 
+    ################################################################################################
+    ## Retrieve the node name
+    # @param  self  The current object
+    # return  Node name
     def getName(self):
         return self.name
 
-    def addChildNode(self, child):
-        self.children.append(child)
-
+    ################################################################################################
+    ## Retrieve the node path
+    # @param  self  The current object
+    # return  Node path
     def getPath(self):
         return self.path
 
+    ################################################################################################
+    ## Add a child to the current node
+    # @param  self   The current object
+    # @param  child  Child to be added
     def addChildNode(self, child):
         self.children.append(child)
 
-####################################################################################################
+    ################################################################################################
+    ## Retrieve a string containing the line of the leaf C++ instantiation
+    # @param  self  The current object
+    # return  String containing the line of the leaf instantiation
+    def getCppInstantiate(self):
+        if self.valueType:
+            return '    CppYangModel::Leaf<' + YangTypeConversion[self.valueType] + '>' + ' '\
+                   + yangName2VarName(self.name) + ';\n'
 
+        if self.key:
+            return '    std::map<CppYangModel::Leaf<' + YangTypeConversion[self.key.getType()]\
+                   + '>, ' + yangName2ClassName(self.name) + '>' + ' '\
+                   + yangName2VarName(self.name) + ';\n'
+
+        if self.name:
+            return '    ' + yangName2ClassName(self.name) + ' ' + yangName2VarName(self.name)\
+                   + ';\n'
+
+        return ''
+
+    ################################################################################################
+    ## Retrieve a string containing the line of the container C++ object initialization
+    # @param  self  The current object
+    # return  Empty string, since the initialization is not needed
+    def getCppInitializer(self):
+        return ""
+
+####################################################################################################
+## Leaf representation
 class Leaf(Node):
+
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the leaf to be created
+    # @param  path     The path of the leaf
     def __init__(self, xmlElem, path):
         super(Leaf, self).__init__(xmlElem, path)
 
@@ -72,19 +125,32 @@ class Leaf(Node):
 
         self.valueType = valueType
 
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ header
+    # @param  self  The current object
+    # return  An empty string, since a leaf uses the generic Leaf object in C++
     def getRecursiveCppHeader(self):
         return ''
 
-    def getCppInstantiate(self):
-        return  '    CppYangModel::Leaf<' + YangTypeConversion[self.valueType] + '>' \
-                + ' ' + yangName2VarName(self.name) + ';\n'
-
+    ################################################################################################
+    ## Retrieve a string containing the line of the leaf C++ object initialization
+    # @param  self  The current object
+    # return  String containing the line of the leaf C++ object initialization
     def getCppInitializer(self):
         return yangName2VarName(self.name) + '("' + self.path + '")'
 
+    ################################################################################################
+    ## Retrieve the leaf value
+    # @param  self  The current object
+    # return  The leaf value
     def getType(self):
         return self.valueType
 
+    ################################################################################################
+    ## Retrieve a string containing a representation of the leaf. Used for debug purposes
+    # @param  self          The current object
+    # @param  prePrintLine  String the must be printed before each line (indentation)
+    # return  String containing the leaf representations
     def showRecursive(self, prePrintLine = ''):
         print prePrintLine + 'Leaf ' + self.name
         print prePrintLine + '|   Type: ' + self.valueType
@@ -92,12 +158,21 @@ class Leaf(Node):
         print prePrintLine + '\''
 
 ####################################################################################################
-
-
+## Container representation
 class Container(Node):
+
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the leaf to be created
+    # @param  path     The path of the leaf
     def __init__(self, xmlElem, path):
         super(Container, self).__init__(xmlElem, path)
 
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ header, including the headers of its children
+    # @param  self  The current object
+    # return  String containing the recursive C++ header
     def getRecursiveCppHeader(self):
         header = ''
         initializerList = ''
@@ -137,12 +212,11 @@ class Container(Node):
 
         return header
 
-    def getCppInstantiate(self):
-        return '    ' + yangName2ClassName(self.name) + ' ' + yangName2VarName(self.name) + ';\n'
-
-    def getCppInitializer(self):
-        return ""
-
+    ################################################################################################
+    ## Retrieve a string containing a representation of the container. Used for debug purposes
+    # @param  self          The current object
+    # @param  prePrintLine  String the must be printed before each line (indentation)
+    # return  String containing the container representations
     def showRecursive(self, prePrintLine = ''):
         print prePrintLine + 'Container ' + self.name
         print prePrintLine + '|   Path: ' + self.path
@@ -151,8 +225,14 @@ class Container(Node):
         print prePrintLine + '\''
 
 ####################################################################################################
-
+## List representation
 class List(Container):
+
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the leaf to be created
+    # @param  path     The path of the leaf
     def __init__(self, xmlElem, path):
         super(List, self).__init__(xmlElem, path)
         # Get key
@@ -167,6 +247,10 @@ class List(Container):
 
         self.keyName = keyName
 
+    ################################################################################################
+    ## Add a child to the current node instead of the child is the key
+    # @param  self   The current object
+    # @param  child  Child to be added
     def addChildNode(self, child):
         # If it's the key of the list, save it as the key, not as a normal child
         if child.getName() == self.keyName:
@@ -175,23 +259,38 @@ class List(Container):
 
         self.children.append(child)
 
+    ################################################################################################
+    ## Retrieve a string containing a representation of the list. Used for debug purposes
+    # @param  self          The current object
+    # @param  prePrintLine  String the must be printed before each line (indentation)
+    # return  String containing the list representations
     def showRecursive(self, prePrintLine = ''):
-        print prePrintLine + 'List ' + self.name + ' [ ' + self.key.getType() + ' ' + self.key.getName() + ' ]'
+        print prePrintLine + 'List ' + self.name + ' [ ' + self.key.getType() + ' '\
+              + self.key.getName() + ' ]'
         print prePrintLine + '|   Path: ' + self.path
         for child in self.children:
             child.showRecursive(prePrintLine + '|   ')
         print prePrintLine + '\''
 
-    def getCppInstantiate(self):
-        return '    std::map<CppYangModel::Leaf<' + YangTypeConversion[self.key.getType()] + '>, ' + yangName2ClassName(self.name) + '>' + ' ' + yangName2VarName(self.name) + ';\n'
-
 ####################################################################################################
-
+## Augment representation
 class Augment(Container):
+
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the leaf to be created
+    # @param  path     The path of the leaf
     def __init__(self, xmlElem, path):
         super(Augment, self).__init__(xmlElem, xmlElem.attrib['target-node'] + '/')
-        self.name = xmlElem.attrib['target-node'][1:].title().replace(":", "_").replace("-", "_").replace("/", "__")
+        self.name = xmlElem.attrib['target-node'][1:].title().replace(":", "_").replace("-", "_")\
+                    .replace("/", "__")
 
+    ################################################################################################
+    ## Retrieve a string containing a representation of the augment. Used for debug purposes
+    # @param  self          The current object
+    # @param  prePrintLine  String the must be printed before each line (indentation)
+    # return  String containing the augment representations
     def showRecursive(self, prePrintLine = ''):
         print prePrintLine + 'Augment ' + self.path
         print prePrintLine + '|   Path: ' + self.path
@@ -200,18 +299,22 @@ class Augment(Container):
         print prePrintLine + '\''
 
 ####################################################################################################
-
+## Module representation
 class Module(Node):
+
+    ################################################################################################
+    ## Constructor
+    # @param  self     The current object
+    # @param  xmlElem  XML Element representing the leaf to be created
+    # @param  path     The path of the leaf
     def __init__(self, xmlElem, path='/'):
         super(Module, self).__init__(xmlElem, path)
         self.nodeType = NODE_TYPE_MODULE
 
-    def showRecursive(self, prePrintLine = ''):
-        print prePrintLine + 'Module ' + self.name
-        for child in self.children:
-            child.showRecursive(prePrintLine + '|   ')
-        print prePrintLine + '\''
-
+    ################################################################################################
+    ## Retrieve a string containing the recursive C++ header, including the headers of its children
+    # @param  self  The current object
+    # return  String containing the recursive C++ header
     def getRecursiveCppHeader(self):
         header = ''
         initializerList = ''
@@ -248,8 +351,20 @@ class Module(Node):
 
         return header
 
+    ################################################################################################
+    ## Retrieve a string containing a representation of the module. Used for debug purposes
+    # @param  self          The current object
+    # @param  prePrintLine  String the must be printed before each line (indentation)
+    # return  String containing the module representations
+    def showRecursive(self, prePrintLine = ''):
+        print prePrintLine + 'Module ' + self.name
+        for child in self.children:
+            child.showRecursive(prePrintLine + '|   ')
+        print prePrintLine + '\''
+
 ####################################################################################################
 
+# Dictionary that maps YANG node type to the related handler class
 DataNodeTypes = {
     NODE_TYPE_MODULE : Module,
     NODE_TYPE_LEAF : Leaf,
@@ -259,7 +374,10 @@ DataNodeTypes = {
 }
 
 ####################################################################################################
-
+## Create a node
+# @param  xmlElem  XML element
+# @param  path     Base path
+# return  The created node
 def createNode(xmlElem, path):
     tag = xmlElem.tag.split('}')
     tag = tag[len(tag) - 1]
@@ -275,23 +393,56 @@ def createNode(xmlElem, path):
     return node
 
 ####################################################################################################
-
-def IterateOverNode(parentNode, xmlElem, path = '/'):
+## Iterate over XML element recursively creating nodes
+# @param  parentNode  Parent node
+# @param  xmlElem     XML element
+# @param  path        Base path
+def iterateOverNode(parentNode, xmlElem, path = '/'):
     for child in xmlElem:
         node = createNode(child, path)
         if node == None:
             continue
 
         parentNode.addChildNode(node)
-        IterateOverNode(node, child, node.getPath())
+        iterateOverNode(node, child, node.getPath())
 
 ####################################################################################################
 
+# Arguments parsing
+parser = argparse.ArgumentParser(description='Convert a given YANG model in a C++ classes model.')
+parser.add_argument('-o', '--output', type=str, metavar='PREFIX',
+                    help='Output prefix. Two files (a .h and a .cc) will be created based on this '
+                          'prefix. The default is the YANG module name.')
+parser.add_argument('-p', '--path', type=str, metavar='PATH1:PATH2', action='append',
+                    help='path is a colon (:) separated list of directories to search for imported '
+                         'modules. This option may be given multiple times.')
+parser.add_argument('input', type=str, help='YANG file to be converted.')
+args = parser.parse_args()
 
+# Mount pybot commmand
+cmd = ["pyang", args.input, "-f", "yin", "-o", args.input + ".xml"]
+if args.path:
+    for path in args.path:
+        cmd.append("-p")
+        cmd.append(path)
+if subprocess.call(cmd) != 0:
+    sys.exit("Error parsing input file: " + args.input)
+
+
+# Open generated XML
+tree = ET.parse(args.input + ".xml")
+root = tree.getroot()
+
+# Parse it
 rootNode = createNode(root, '')
-IterateOverNode(rootNode, root)
+iterateOverNode(rootNode, root)
+headerContent = rootNode.getRecursiveCppHeader()
 
-#rootNode.showRecursive()
-
-
-print rootNode.getRecursiveCppHeader()
+# Output the header
+outputFile = rootNode.getName()
+if args.output:
+    outputFile = args.output
+outputFile += '.h'
+f = open(outputFile, 'w')
+f.write(headerContent)
+f.close
