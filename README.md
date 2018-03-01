@@ -13,11 +13,11 @@ Script to conver [YANG models](https://tools.ietf.org/html/rfc6020) to C++ Class
  - Leaf parsing
 
 ## TODO List
- TODO
- 
- ## How to use
+Please refer to [Issues](https://github.com/redivo/yang2cpp/issues)
+
+## How to use
  ```
- #./yang2class.py --help
+#./yang2class.py --help
 usage: yang2class.py [-h] [-o PREFIX] [-p PATH1:PATH2] input
 
 Convert a given YANG model in a C++ classes model.
