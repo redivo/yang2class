@@ -17,8 +17,8 @@ Please refer to [Issues](https://github.com/redivo/yang2cpp/issues)
 
 ## How to use
  ```
-#./yang2class.py --help
-usage: yang2class.py [-h] [-o PREFIX] [-p PATH1:PATH2] input
+# ./yang2cpp.py --help
+usage: yang2cpp.py [-h] [-o PREFIX] [-d DIR] [-p PATH1:PATH2] input
 
 Convert a given YANG model in a C++ classes model.
 
@@ -31,8 +31,10 @@ optional arguments:
                         Output prefix. Two files (a .h and a .cc) will be
                         created based on this prefix. The default is the YANG
                         module name.
+  -d DIR, --output-directory DIR
+                        Path to directory where the output files will be
+                        placed in. The default is the current directory.
   -p PATH1:PATH2, --path PATH1:PATH2
                         path is a colon (:) separated list of directories to
-                        search for imported modules. This option may be given
-                        multiple times.
+                        search for import
 ```

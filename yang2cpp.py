@@ -232,7 +232,7 @@ class Container(Node):
                 initializerList += ',\n    ' + child.getCppInitializer()
 
         impl += '/******************************************************************************'\
-               + '********************/\n'
+               + '********************/\n\n'
         impl += yangName2ClassName(self.name) + '::' + yangName2ClassName(self.name) + '()\n'
         impl += '    : CppYangModel::BasicNode("' + self.path + '")'
 
@@ -398,7 +398,7 @@ class Module(Node):
             initializerList += initializer
 
         impl += '/******************************************************************************'\
-               + '********************/\n'
+               + '********************/\n\n'
         impl += yangName2ClassName(self.name) + '::' + yangName2ClassName(self.name) + '()\n'
 
         # If initializer list is not empty, print it
@@ -496,6 +496,9 @@ parser = argparse.ArgumentParser(description='Convert a given YANG model in a C+
 parser.add_argument('-o', '--output', type=str, metavar='PREFIX',
                     help='Output prefix. Two files (a .h and a .cc) will be created based on this '
                           'prefix. The default is the YANG module name.')
+parser.add_argument('-d', '--output-directory', type=str, metavar='DIR',
+                    help='Path to directory where the output files will be placed in. The default '
+                         'is the current directory.', default='./')
 parser.add_argument('-p', '--path', type=str, metavar='PATH1:PATH2', action='append',
                     help='path is a colon (:) separated list of directories to search for imported '
                          'modules. This option may be given multiple times.')
@@ -547,9 +550,10 @@ outputFile = rootNode.getName()
 if args.output:
     outputFile = args.output
 outputFile += '.h'
-f = open(outputFile, 'w')
+f = open(args.output_directory + '/' + outputFile, 'w')
 f.write(headerContent)
 f.close
+
 
 # Generate implementation
 implementationContent = header
@@ -560,6 +564,87 @@ outputFile = rootNode.getName()
 if args.output:
     outputFile = args.output
 outputFile += '.cc'
-f = open(outputFile, 'w')
+f = open(args.output_directory + '/' + outputFile, 'w')
 f.write(implementationContent)
+f.close
+
+# Generate basic header
+basicHeader  = '/*********************************************************************************'\
+               '*****************/\n'
+basicHeader += '/**\n'
+basicHeader += ' * \\file\n'
+basicHeader += ' * \\brief Basics classes used in YANG generator\n'
+basicHeader += ' *\n'
+basicHeader += ' * WARNING WARNING --> This is an auto generated file <-- WARNING WARNING\n'
+basicHeader += ' *\n'
+basicHeader += ' */\n'
+basicHeader += '/*********************************************************************************'\
+               '*****************/\n'
+basicHeader += '\n'
+basicHeader += '#ifndef __YANG2CPP_H__\n'
+basicHeader += '#define __YANG2CPP_H__\n'
+basicHeader += '\n'
+basicHeader += '#include <string>\n'
+basicHeader += '#include <map>\n'
+basicHeader += '#include <stdint.h>\n'
+basicHeader += '\n'
+basicHeader += '/*********************************************************************************'\
+               '*****************/\n'
+basicHeader += '\n'
+basicHeader += 'namespace CppYangModel {\n'
+basicHeader += '\n'
+basicHeader += '/**\n'
+basicHeader += ' * \\brief Basic generic node\n'
+basicHeader += ' */\n'
+basicHeader += 'class BasicNode {\n'
+basicHeader += '   public:\n'
+basicHeader += '    /**\n'
+basicHeader += '     * \\brief Constructor\n'
+basicHeader += '     * \param path  Path of the node\n'
+basicHeader += '     */\n'
+basicHeader += '    BasicNode(std::string path) : path_(path) {}\n'
+basicHeader += '\n'
+basicHeader += '   private:\n'
+basicHeader += '    std::string path_;\n'
+basicHeader += '};\n'
+basicHeader += '\n'
+basicHeader += '/*********************************************************************************'\
+               '*****************/\n'
+basicHeader += '/**\n'
+basicHeader += ' * \\brief Leaf of the tree\n'
+basicHeader += ' */\n'
+basicHeader += 'template <class T>\n'
+basicHeader += 'class Leaf : public BasicNode {\n'
+basicHeader += '   public:\n'
+basicHeader += '    /**\n'
+basicHeader += '     * \\brief Constructor\n'
+basicHeader += '     * \param path  Path of the leaf\n'
+basicHeader += '     */\n'
+basicHeader += '    Leaf(std::string path) : BasicNode(path) {}\n'
+basicHeader += '\n'
+basicHeader += '    /**\n'
+basicHeader += '     * \\brief Set path of the leaf\n'
+basicHeader += '     * \param path  Path to be set\n'
+basicHeader += '     */\n'
+basicHeader += '    void setValue(const T& value) {\n'
+basicHeader += '        value_ = value;\n'
+basicHeader += '    }\n'
+basicHeader += '\n'
+basicHeader += '    /**\n'
+basicHeader += '     * \\brief Get path of the leaf\n'
+basicHeader += '     * \\return Path of the list\n'
+basicHeader += '     */\n'
+basicHeader += '    T getValue() {\n'
+basicHeader += '        return value_;\n'
+basicHeader += '    }\n'
+basicHeader += '\n'
+basicHeader += '   private:\n'
+basicHeader += '    T value_;\n'
+basicHeader += '};\n'
+basicHeader += '\n'
+basicHeader += '} /* namespace CppYangModel */\n'
+basicHeader += '\n'
+basicHeader += '#endif /* __YANG2CPP_H__ */\n'
+f = open(args.output_directory + '/yang2cpp.h', 'w')
+f.write(basicHeader)
 f.close
