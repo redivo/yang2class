@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module name="example"
+        xmlns="urn:ietf:params:xml:ns:yang:yin:1"
+        xmlns:example="urn:example"
+        xmlns:base="urn:base">
+  <yang-version value="1.1"/>
+  <namespace uri="urn:example"/>
+  <prefix value="example"/>
+  <import module="base">
+    <prefix value="base"/>
+  </import>
+  <augment target-node="/base:x/base:y/base:z">
+    <leaf name="augmented">
+      <type name="int16"/>
+    </leaf>
+  </augment>
+  <container name="my-container">
+    <leaf name="my-leaf">
+      <type name="int8"/>
+    </leaf>
+  </container>
+  <list name="my-list">
+    <key value="id"/>
+    <leaf name="id">
+      <type name="int32"/>
+    </leaf>
+    <leaf name="content">
+      <type name="string"/>
+    </leaf>
+  </list>
+</module>
