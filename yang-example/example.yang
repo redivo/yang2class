@@ -9,6 +9,14 @@ module example {
 
     description "Example module.";
 
+    leaf my-int64 {
+        type int64;
+    }
+
+    leaf my-uint64 {
+        type uint64;
+    }
+
     augment "/base:x/base:y/base:z" {
         description "Example augment.";
         leaf augmented {
