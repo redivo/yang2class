@@ -21,6 +21,8 @@ YangTypeConversion = {
     'uint16' : 'uint16_t',
     'int32'  : 'int32_t',
     'uint32' : 'uint32_t',
+    'int64'  : 'int64_t',
+    'uint64' : 'uint64_t',
     'string' : 'std::string',
 }
 
@@ -602,10 +604,12 @@ basicHeader += '    /**\n'
 basicHeader += '     * \\brief Constructor\n'
 basicHeader += '     * \param path  Path of the node\n'
 basicHeader += '     */\n'
-basicHeader += '    BasicNode(std::string path) : path_(path) {}\n'
+basicHeader += '    BasicNode(std::string path) : path_(path), presence_(false) {}\n'
 basicHeader += '\n'
+# TODO getters and setters
 basicHeader += '   private:\n'
 basicHeader += '    std::string path_;\n'
+basicHeader += '    bool presence_;\n'
 basicHeader += '};\n'
 basicHeader += '\n'
 basicHeader += '/*********************************************************************************'\
